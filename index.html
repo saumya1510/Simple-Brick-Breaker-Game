@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Simple Canvas Game</title>
+		<script src = "js/jquery-1.4.3.min.js"></script>
+		<link rel = "stylesheet" href = "alertify.js-0.3.11\themes\alertify.core.css" />
+		<link rel = "stylesheet" href = "alertify.js-0.3.11\themes\alertify.default.css" />
+		</head>
+		<body>
+		<script>
+	
+</script>
+
+		<script type = "text/javascript">
+var canvas = document.createElement("canvas");
+var ctx = canvas.getContext("2d");
+canvas.width = 1024;
+canvas.height = 520;
+document.body.appendChild(canvas);
+
+var x, y, dx, dy, paddlex;
+/*var x = 25;
+var y = 250;
+var dx = 1.5;
+var dy = -4;*/
+var width = canvas.width;
+var height = canvas.height;
+var ctx;
+var ballr = 10;
+//var paddlex = width/2;
+var paddleh = 10; 
+var paddlew = 100;
+var canvasminx = 0;
+var canvasmaxx = 0;
+var intervalId = 0;
+var bricks;
+var nrows = 8;
+var ncols = 8;
+var brickwidth = (width/ncols) - 1;
+var brickheight = 15;
+var padding = 1;
+var rowcolors = ["#FF1C0A", "FF1C0A", "#FFFD0A", "#FFFD0A", "#00A308", "#00A308", "#0008DB", "#0008DB"];
+var paddlecolor = "#D68533";
+var paddlecolor = "#D68533";
+var ballcolor = "#CCCCB2";
+var backcolor = "#000000";
+var count;
+var score = 0;
+
+
+
+
+function init() {
+	x = 25; y = 250; dx = 1.5; dy = -4;
+	paddlex = width/2;
+	count = 1;
+	bricks = new Array(nrows);
+	for (i = 0; i < nrows; i++)
+	{
+		bricks[i] = new Array(ncols);
+		for(j = 0; j < ncols; j++)
+			bricks[i][j] = 1;
+	}
+	ctx = canvas.getContext("2d");
+	intervalId = setInterval(draw, 10);
+	canvasminx = $("#canvas").offset().left;
+	canvasmaxx = canvasminx + width;
+}
+function init_again()
+{
+	x = 25; y = 250; dx = 1.5; dy = -4;
+	paddlex = width/2;
+	count++;
+	ctx = canvas.getContext("2d");
+	intervalId = setInterval(draw, 10);
+	canvasminx = $("#canvas").offset().left;
+	canvasmaxx = canvasminx + width;
+}
+
+function circle(x,y,r) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2, true);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function rect(x,y,w,h) {
+  ctx.beginPath();
+  ctx.rect(x,y,w,h);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function clear() {
+	ctx.clearRect(0, 0, width, height);
+	rect(0, 0, width, height);
+}
+
+rightDown = false;
+leftDown = false;
+
+//set rightDown or leftDown if the right or left keys are down
+function onKeyDown(evt) {
+  if (evt.keyCode == 39) rightDown = true;
+  else if (evt.keyCode == 37) leftDown = true;
+}
+
+//and unset them when the right or left key is released
+function onKeyUp(evt) {
+  if (evt.keyCode == 39) rightDown = false;
+  else if (evt.keyCode == 37) leftDown = false;
+}
+
+$(document).keydown(onKeyDown);
+$(document).keyup(onKeyUp);
+       
+//function definition for the restart thingy
+function play_again()
+{
+	if (count < 3)
+	{
+			ctx.save();
+			ctx.setTransform(1, 0, 0, 1, 0, 0);
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.restore();
+			rightDown = false;
+			leftDown = false;
+			init_again();
+	}
+	else
+	{
+		alertify.set( 
+		{
+			labels: {
+			ok : "Yes, please!",
+			cancel: "No, thank you!"
+			}
+		});
+		alertify.set( 
+		{
+			buttonReverse: true
+		});
+		alertify.confirm("Your 3 chances are over. \nScore : " + score + "\nWould you like to play again?", function(e) 
+		{
+			if (e)
+			{
+				ctx.save();
+				ctx.setTransform(1, 0, 0, 1, 0, 0);
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				ctx.restore();
+				rightDown = false;
+				leftDown = false;
+				init();
+			}
+			else
+			{
+				ctx.save();
+				ctx.setTransform(1, 0, 0, 1, 0, 0);
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				ctx.restore();
+			}
+		} );
+	}
+}
+function draw() 
+{
+	ctx.fillStyle = backcolor;
+	clear();
+	ctx.fillStyle = ballcolor;
+	circle(x, y, ballr);
+	if (rightDown && paddlex < (width - paddlew)) paddlex += 5;
+	else if (leftDown && paddlex > 0) paddlex -= 5;
+	ctx.fillStyle = paddlecolor;
+	rect(paddlex, height-paddleh, paddlew, paddleh);
+	for (i=0; i < nrows; i++)
+	{
+		for (j=0; j < ncols; j++)
+		{
+			ctx.fillStyle = rowcolors[i];
+			if (bricks[i][j] == 1) 
+			{
+				rect((j * (brickwidth + padding)) + padding, (i * (brickheight + padding)) + padding, brickwidth, brickheight);
+			}
+		}
+	}
+	//have we hit a brick?
+	rowheight = brickheight + padding;
+	colwidth = brickwidth + padding;
+	row = Math.floor(y/rowheight);
+	col = Math.floor(x/colwidth);
+	//if so, reverse the ball and mark the brick as broken
+	if (y < nrows * rowheight && row >= 0 && col >= 0 && bricks[row][col] == 1)
+	{
+		dy = -dy;
+		bricks[row][col] = 0;
+		switch(row)
+		{
+			case 0 : score += 8;
+					 break;
+			case 1 : score += 8;
+					 break;
+			case 2 : score += 6;
+					 break;
+			case 3 : score += 6;
+					 break;
+			case 4 : score += 4;
+					 break;
+			case 5 : score += 4;
+					 break;
+			case 6 : score += 2;
+					 break;
+			case 7 : score += 2;
+					 break;
+		}
+	}
+	
+	if(x + dx + ballr > width || x + dx - ballr < 0)
+		dx = -dx;
+	if(y + dy - ballr < 0)
+		dy = -dy;
+	else if (y + dy + ballr > height - paddleh) 
+	{
+		if (x > paddlex && x < paddlex + paddlew)
+		{
+			/*dy = -dy;
+			if (x > paddlex && x < paddlex + paddlew/2)
+				dx = -Math.abs(dx) 
+			else
+				dx = Math.abs(dx) */
+			dx = 8 * ((x-(paddlex+paddlew/2))/paddlew);
+			dy = -dy;
+		}
+		
+		else if (y + dy + ballr > height)
+		{
+			clearInterval(intervalId);
+			play_again();
+			//function call to display the restart thingy
+		}
+	}
+	x += dx;
+	y += dy;
+}
+
+
+
+init();
+
+</script>
+
+
+
+</body>
+
+
+<script src = "alertify.js-0.3.11\lib\alertify.min.js"></script>
+	
+</html>
